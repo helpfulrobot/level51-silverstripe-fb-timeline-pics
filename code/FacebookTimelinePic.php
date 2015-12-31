@@ -6,7 +6,8 @@
  * Date: 29.08.15
  * Time: 16:40
  */
-class FacebookTimelinePic extends Image {
+class FacebookTimelinePic extends Image
+{
     private static $db = array(
         'UID' => 'Varchar',
         'Likes' => 'Int',
@@ -36,7 +37,8 @@ class FacebookTimelinePic extends Image {
     private static $summary_fields = array('CMSThumbnail', 'Displays', 'Caption');
     private static $default_sort = 'Date DESC';
 
-    public function fieldLabels($includerelations = true) {
+    public function fieldLabels($includerelations = true)
+    {
         $labels = parent::fieldLabels($includerelations);
 
         $labels['Name'] = _t('FacebookTimelinePic.NAME', 'Name');
@@ -49,7 +51,8 @@ class FacebookTimelinePic extends Image {
         return $labels;
     }
 
-    public function getCMSFields() {
+    public function getCMSFields()
+    {
         $fields = parent::getCMSFields();
         $fields->removeByName('OwnerID');
         $fields->removeByName('ParentID');
@@ -60,7 +63,8 @@ class FacebookTimelinePic extends Image {
         return $fields;
     }
 
-    public function getDisplays() {
+    public function getDisplays()
+    {
         return $this->Visible ? _t('FacebookTimelinePic.Y', 'Yes') : _t('FacebookTimelinePic.N', 'No');
     }
 }

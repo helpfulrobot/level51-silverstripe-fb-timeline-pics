@@ -6,7 +6,8 @@
  * Date: 22.08.15
  * Time: 15:54
  */
-class FacebookAPI {
+class FacebookAPI
+{
     /**
      * Singleton instance
      * @var FacebookAPI
@@ -29,10 +30,12 @@ class FacebookAPI {
      * Creates a new instance of the Facebook PHP SDK.
      * Note that the constructor is private as of the singleton specification.
      */
-    private function __construct() {
+    private function __construct()
+    {
         $sC = SiteConfig::current_site_config();
-        if(!$sC->AppId || !$sC->AppSecret || !$sC->PageURL)
+        if (!$sC->AppId || !$sC->AppSecret || !$sC->PageURL) {
             user_error("You need to provide an app id, app secret and a page url segment to use this API.");
+        }
 
         $this->api = new Facebook\Facebook([
             'app_id' => $sC->AppId,
@@ -43,8 +46,8 @@ class FacebookAPI {
 
         // Get albums of profile
         $albums = $this->api->get($sC->PageURL . '/albums');
-        foreach(json_decode($albums->getBody())->data as $album) {
-            if($album->name == 'Timeline Photos') {
+        foreach (json_decode($albums->getBody())->data as $album) {
+            if ($album->name == 'Timeline Photos') {
                 $this->albumId = $album->id;
                 break 1;
             }
@@ -52,15 +55,19 @@ class FacebookAPI {
     }
 
     // "Deactivate" clone method
-    private function __clone() {}
+    private function __clone()
+    {
+    }
 
     /**
      * Singleton main method
      * @return FacebookAPI
      */
-    public static function inst() {
-        if(!self::$instance)
+    public static function inst()
+    {
+        if (!self::$instance) {
             self::$instance = new self();
+        }
 
         return self::$instance;
     }
@@ -71,7 +78,8 @@ class FacebookAPI {
      * @param bool|false $countLikes
      * @return ArrayList
      */
-    public function requestPosts($limit = 100, $countLikes = false) {
+    public function requestPosts($limit = 100, $countLikes = false)
+    {
         try {
             // Make the actual API request
             $response = $this->api->get(SiteConfig::current_site_config()->PageURL . '/posts?fields=id,message,picture,object_id,created_time');
@@ -82,9 +90,10 @@ class FacebookAPI {
             // Populate ArrayList
             $fA = ArrayList::create();
             $entry = array();
-            foreach($feed as $post) {
-                if(!isset($post->message))
+            foreach ($feed as $post) {
+                if (!isset($post->message)) {
                     continue;
+                }
 
                 // Set message and date
                 $entry['Message'] = $this->makeLinks($post->message);
@@ -92,16 +101,18 @@ class FacebookAPI {
                 $entry['ID'] = preg_replace('/(\d)*(_)/', '', $post->id);
 
                 // Count likes
-                if($countLikes) {
+                if ($countLikes) {
                     $entry['Likes'] = count(json_decode($this->api->get($post->id . '/likes')->getBody())->data);
                 }
 
                 $fA->add($entry);
-                if($fA->count() == $limit) break;
+                if ($fA->count() == $limit) {
+                    break;
+                }
             }
 
             return $fA;
-        } catch(FacebookSDKException $e) {
+        } catch (FacebookSDKException $e) {
             user_error($e->getMessage());
         }
     }
@@ -112,7 +123,8 @@ class FacebookAPI {
      * @param int $limit
      * @return ArrayList
      */
-    public function requestTimelinePics($limit = 100, $countLikes = false) {
+    public function requestTimelinePics($limit = 100, $countLikes = false)
+    {
         try {
             // Make the actual API request
             $response = $this->api->get('/' . $this->albumId . '/photos?fields=name,source,created_time&limit=' . $limit);
@@ -123,14 +135,16 @@ class FacebookAPI {
             // Populate ArrayList
             $pA = ArrayList::create();
             $photo = array();
-            foreach($album as $picture) {
+            foreach ($album as $picture) {
                 $photo['ID'] = $picture->id;
                 $photo['Source'] = $picture->source;
                 $photo['Date'] = date('d-m-Y H:i', strtotime($picture->created_time));
-                if(isset($picture->name)) $photo['Name'] = $this->makeLinks($picture->name);
+                if (isset($picture->name)) {
+                    $photo['Name'] = $this->makeLinks($picture->name);
+                }
 
                 // Count likes
-                if($countLikes) {
+                if ($countLikes) {
                     $photo['Likes'] = count(json_decode($this->api->get($picture->id . '/likes')->getBody())->data);
                 }
 
@@ -138,7 +152,7 @@ class FacebookAPI {
             }
 
             return $pA;
-        } catch(FacebookSDKException $e) {
+        } catch (FacebookSDKException $e) {
             user_error($e->getMessage());
         }
     }
@@ -150,11 +164,14 @@ class FacebookAPI {
      * @throws ValidationException
      * @throws null
      */
-    public function syncPosts($limit = 100) {
+    public function syncPosts($limit = 100)
+    {
         // Get posts and create records
-        foreach($this->requestPosts($limit, true) as $post) {
-            if(!($p = FacebookPost::get()->filter('UID', $post->ID)->first()))
-                $p = new FacebookPost(); {
+        foreach ($this->requestPosts($limit, true) as $post) {
+            if (!($p = FacebookPost::get()->filter('UID', $post->ID)->first())) {
+                $p = new FacebookPost();
+            }
+            {
                 $p->UID = $post->ID;
                 $p->Message = $post->Message;
                 $p->Date = $post->Date;
@@ -171,13 +188,14 @@ class FacebookAPI {
      * @throws ValidationException
      * @throws null
      */
-    public function syncPics($limit = 100) {
+    public function syncPics($limit = 100)
+    {
         // Get folder for image files
         $picDir = Folder::find_or_make(Config::inst()->get('FacebookAPI', 'pic_directory'));
 
         // Get pics and create records
-        foreach($this->requestTimelinePics($limit, true) as $pic) {
-            if(!($p = FacebookTimelinePic::get()->filter('UID', $pic->ID)->first())) {
+        foreach ($this->requestTimelinePics($limit, true) as $pic) {
+            if (!($p = FacebookTimelinePic::get()->filter('UID', $pic->ID)->first())) {
                 $p = new FacebookTimelinePic();
 
                 // Get image name from URI
@@ -199,8 +217,8 @@ class FacebookAPI {
                 $p->write();
 
                 // Check if there was an existing wall post entry for the pic
-                if($post = FacebookPost::get()->filter('UID', $p->UID)->first()) {
-                    if($post->PicID == 0) {
+                if ($post = FacebookPost::get()->filter('UID', $p->UID)->first()) {
+                    if ($post->PicID == 0) {
                         $post->PicID = $p->ID;
                         $post->write();
                     }
@@ -219,18 +237,23 @@ class FacebookAPI {
      * @param bool|false $forceSync
      * @return ArrayList|DataList|SS_Limitable
      */
-    public function getPosts($limit = 100, $fromAPI = false, $forceSync = false) {
-        if($fromAPI)
+    public function getPosts($limit = 100, $fromAPI = false, $forceSync = false)
+    {
+        if ($fromAPI) {
             $posts = $this->requestPosts($limit, true);
+        }
 
-        if($forceSync)
+        if ($forceSync) {
             $this->syncPosts($limit);
+        }
 
-        if(!FacebookPost::get() && !$fromAPI)
+        if (!FacebookPost::get() && !$fromAPI) {
             $this->syncPosts($limit);
+        }
 
-        if(!$fromAPI)
+        if (!$fromAPI) {
             $posts = FacebookPost::get()->limit($limit);
+        }
 
         return $posts;
     }
@@ -242,18 +265,23 @@ class FacebookAPI {
      * @param bool|false $forceSync
      * @return ArrayList|DataList|SS_Limitable
      */
-    public function getPics($limit = 100, $fromAPI = false, $forceSync = false) {
-        if($fromAPI)
+    public function getPics($limit = 100, $fromAPI = false, $forceSync = false)
+    {
+        if ($fromAPI) {
             $pics = $this->requestTimelinePics($limit);
+        }
 
-        if($forceSync)
+        if ($forceSync) {
             $this->syncPics($limit);
+        }
 
-        if(!FacebookTimelinePic::get() && !$fromAPI)
+        if (!FacebookTimelinePic::get() && !$fromAPI) {
             $this->syncPics($limit);
+        }
 
-        if(!$fromAPI)
+        if (!$fromAPI) {
             $pics = FacebookTimelinePic::get()->limit($limit);
+        }
 
         return $pics;
     }
@@ -265,27 +293,28 @@ class FacebookAPI {
      * @param $str
      * @return mixed
      */
-    private function makeLinks($str) {
+    private function makeLinks($str)
+    {
         $reg_exUrl = "/(((http|https|ftp|ftps)\:\/\/)|(www\.))[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\:[0-9]+)?(\/\S*)?/";
         $urls = array();
         $urlsToReplace = array();
-        if(preg_match_all($reg_exUrl, $str, $urls)) {
+        if (preg_match_all($reg_exUrl, $str, $urls)) {
             $numOfMatches = count($urls[0]);
             $numOfUrlsToReplace = 0;
-            for($i=0; $i<$numOfMatches; $i++) {
+            for ($i=0; $i<$numOfMatches; $i++) {
                 $alreadyAdded = false;
                 $numOfUrlsToReplace = count($urlsToReplace);
-                for($j=0; $j<$numOfUrlsToReplace; $j++) {
-                    if($urlsToReplace[$j] == $urls[0][$i]) {
+                for ($j=0; $j<$numOfUrlsToReplace; $j++) {
+                    if ($urlsToReplace[$j] == $urls[0][$i]) {
                         $alreadyAdded = true;
                     }
                 }
-                if(!$alreadyAdded) {
+                if (!$alreadyAdded) {
                     array_push($urlsToReplace, $urls[0][$i]);
                 }
             }
             $numOfUrlsToReplace = count($urlsToReplace);
-            for($i=0; $i<$numOfUrlsToReplace; $i++) {
+            for ($i=0; $i<$numOfUrlsToReplace; $i++) {
                 $str = str_replace($urlsToReplace[$i], "<a href=\"".$urlsToReplace[$i]."\" target=\"_blank\">".$urlsToReplace[$i]."</a> ", $str);
             }
             return $str;

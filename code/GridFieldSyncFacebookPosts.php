@@ -6,19 +6,22 @@
  * Date: 26.08.15
  * Time: 22:26
  */
-class GridFieldSyncFacebookPosts implements GridField_HTMLProvider, GridField_ActionProvider {
+class GridFieldSyncFacebookPosts implements GridField_HTMLProvider, GridField_ActionProvider
+{
 
     protected $targetFragment;
 
-    public function __construct($targetFragment = "before") {
+    public function __construct($targetFragment = "before")
+    {
         $this->targetFragment = $targetFragment;
     }
 
-    public function getHTMLFragments($gridField) {
+    public function getHTMLFragments($gridField)
+    {
         $button = new GridField_FormAction(
             $gridField,
             'syncwithfacebook',
-            _t('GridFieldSyncFacebookPosts.CTA','Sync with Facebook'),
+            _t('GridFieldSyncFacebookPosts.CTA', 'Sync with Facebook'),
             'syncwithfacebook',
             null
         );
@@ -29,12 +32,14 @@ class GridFieldSyncFacebookPosts implements GridField_HTMLProvider, GridField_Ac
         );
     }
 
-    public function getActions($gridField) {
+    public function getActions($gridField)
+    {
         return array('syncwithfacebook');
     }
 
-    public function handleAction(GridField $gridField, $actionName, $arguments, $data) {
-        if($actionName == 'syncwithfacebook') {
+    public function handleAction(GridField $gridField, $actionName, $arguments, $data)
+    {
+        if ($actionName == 'syncwithfacebook') {
             $this->handleSyncWithFacebook($gridField);
         }
     }
@@ -42,7 +47,8 @@ class GridFieldSyncFacebookPosts implements GridField_HTMLProvider, GridField_Ac
     /**
      * Call the youtube factory function to get and update the video entries
      */
-    public function handleSyncWithFacebook($gridField, $request = null) {
+    public function handleSyncWithFacebook($gridField, $request = null)
+    {
 
         // Trigger API to sync posts
         FacebookAPI::inst()->syncPosts();
@@ -53,5 +59,4 @@ class GridFieldSyncFacebookPosts implements GridField_HTMLProvider, GridField_Ac
         // Redirect to the grid overview
         Controller::curr()->redirectBack();
     }
-
 }

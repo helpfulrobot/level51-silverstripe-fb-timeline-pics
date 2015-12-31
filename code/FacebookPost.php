@@ -6,7 +6,8 @@
  * Date: 26.08.15
  * Time: 21:46
  */
-class FacebookPost extends DataObject {
+class FacebookPost extends DataObject
+{
     private static $db = array(
         'UID' => 'Varchar',
         'Message' => 'HTMLText',
@@ -35,7 +36,8 @@ class FacebookPost extends DataObject {
 
     private static $default_sort = 'Date DESC';
 
-    public function fieldLabels($includerelations = true) {
+    public function fieldLabels($includerelations = true)
+    {
         $labels = parent::fieldLabels($includerelations);
 
         $labels['Message.NoHTML'] = _t('FacebookPost.MESSAGE', 'Text');
@@ -46,7 +48,8 @@ class FacebookPost extends DataObject {
         return $labels;
     }
 
-    public function getCMSFields() {
+    public function getCMSFields()
+    {
         $fields = parent::getCMSFields();
         $fields->removeByName(array('SortOrder', 'Pic', 'UID'));
         $fields->addFieldsToTab('Root.Main', array(
@@ -58,7 +61,8 @@ class FacebookPost extends DataObject {
         return $fields;
     }
 
-    public function getDisplays() {
+    public function getDisplays()
+    {
         return $this->Visible ? _t('FacebookPost.Y', 'Yes') : _t('FacebookPost.N', 'No');
     }
 }
